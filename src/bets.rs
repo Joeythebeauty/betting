@@ -183,29 +183,26 @@ impl Bets {
         Ok(account_updates)
     }
 
-    pub fn create_bet<T: AsRef<str>>(
+    pub fn create<T: AsRef<str>>(
         &self,
         server: &str,
-        bet: &str,
         bet_desc: &str,
-        options: &[T],
         options_desc: &[T],
     ) -> Result<(), BetError> {
-        assert!(options.len() == options_desc.len());
         let mut conn = Connection::open(&self.db_path)?;
         let tx = conn.transaction()?;
         tx.execute(
             "INSERT 
             INTO Bet (server_id, bet_id, is_open, desc) 
             VALUES (?1, ?2, ?3, ?4)",
-            &[server, bet, "1", bet_desc],
+            &[server, bet_id, "1", bet_desc],
         )?;
-        for i in 0..options.len() {
+        for i in 0..options_desc.len() {
             tx.execute(
                 "INSERT 
                 INTO Option (server_id, option_id, bet_id, desc) 
                 VALUES (?1, ?2, ?3, ?4)",
-                &[server, options[i].as_ref(), bet, options_desc[i].as_ref()],
+                &[server, i, bet_id, options_desc[i].as_ref()],
             )?;
         }
         Ok(tx.commit()?)
@@ -543,16 +540,16 @@ impl Bets {
         Ok(account_updates)
     }
 
-    pub fn close_bet(
+    pub fn resolve(
         &self,
         server: &str,
+        bet: &str,
         winning_option: &str,
     ) -> Result<Vec<AccountUpdate>, BetError> {
         let mut conn = Connection::open(&self.db_path)?;
         // retrieve the total of the bet and the winning parts
-        let bet = Bets::_bet_of_option(&conn, server, winning_option)?;
-        Bets::assert_bet_not_deleted(&conn, server, &bet)?;
-        let options_statuses = Bets::options_statuses(&conn, server, &bet)?;
+        Bets::assert_bet_not_deleted(&conn, server, bet)?;
+        let options_statuses = Bets::options_statuses(&conn, server, bet)?;
         let mut winners: Vec<String> = Vec::new();
         let mut wins: Vec<u32> = Vec::new();
         let mut total = 0;

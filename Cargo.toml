@@ -10,5 +10,8 @@ keywords = ["bets", "betting", "prediction", "wager", "outcome"]
 
 [dependencies]
 anyhow = "1.0"
-rusqlite = "0.28"
+rusqlite = { version = "0.28", features = ["bundled"] }
 itertools = "0.10"
+
+[dev-dependencies]
+diesel_cli = {}
