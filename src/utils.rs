@@ -1,7 +1,7 @@
 // Distribute integer quantities of a total according to un-normalized parts,
 // minimizing the error incurred by rounding
 // https://en.wikipedia.org/wiki/Largest_remainder_method
-pub fn lrm(total: u32, parts: &Vec<u32>) -> Vec<u32> {
+pub fn lrm(total: u64, parts: &Vec<u64>) -> Vec<u64> {
     let norm = parts.iter().fold(0, |i, a| i + *a);
     if norm == 0 {
         return vec![0; parts.len()];
@@ -13,7 +13,7 @@ pub fn lrm(total: u32, parts: &Vec<u32>) -> Vec<u32> {
     // compute the ideal gains (real number)
     let fgains: Vec<f32> = parts.iter().map(|part| total as f32 * part).collect();
     // attribute the rounded down gains to everyone
-    let mut gains: Vec<u32> = fgains.iter().map(|fgain| fgain.floor() as u32).collect();
+    let mut gains: Vec<u64> = fgains.iter().map(|fgain| fgain.floor() as u64).collect();
     // compute the remaining quantity to distribute (guaranteed to be less than gains.len())
     let total = total - gains.iter().fold(0, |init, gain| init + gain);
     // give +1 to the largest remainders to distribute the remaining quantity

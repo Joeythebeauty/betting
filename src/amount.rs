@@ -3,7 +3,7 @@ use anyhow::Error;
 
 #[derive(Clone, Copy)]
 pub enum Amount {
-    FLAT(u32),
+    FLAT(u64),
     FRACTION(f32)
 }
 
@@ -34,5 +34,17 @@ impl FromStr for Amount {
         } else {
             Ok(Amount::FLAT(s.parse()?))
         }
+    }
+}
+
+impl From<u64> for Amount {
+    fn from(val: u64) -> Self {
+        Amount::FLAT(val)
+    }
+}
+
+impl From<f32> for Amount {
+    fn from(fract: f32) -> Self {
+        Amount::FRACTION(fract)
     }
 }
