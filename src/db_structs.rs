@@ -17,11 +17,11 @@ pub struct Bet {
     pub bet: u64,
     pub server: u64,
     pub desc: String,
-    pub options: Vec<Option>,
+    pub outcomes: Vec<Outcome>,
     pub is_open: bool
 }
 
-pub struct Option {
+pub struct Outcome {
     pub desc: String,
     // [(user, amount), ]
     pub wagers: Vec<(u64, u64)>,

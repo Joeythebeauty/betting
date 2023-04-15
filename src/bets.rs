@@ -30,7 +30,7 @@ impl Bets {
             [],
         )?;
         conn.execute(
-            "CREATE TABLE IF NOT EXISTS Option (
+            "CREATE TABLE IF NOT EXISTS Outcome (
                 bet INTEGER,
                 number INTEGER,
                 desc TEXT,
@@ -41,11 +41,11 @@ impl Bets {
         conn.execute(
             "CREATE TABLE IF NOT EXISTS Wager (
                 bet INTEGER,
-                option INTEGER,
+                outcome INTEGER,
                 server INTEGER,
                 user INTEGER,
                 amount INTEGER NOT NULL,
-                FOREIGN KEY(bet, option) REFERENCES Option(bet, number) ON DELETE CASCADE,
+                FOREIGN KEY(bet, outcome) REFERENCES Outcome(bet, number) ON DELETE CASCADE,
                 FOREIGN KEY(server, user) REFERENCES Account(server, user) ON DELETE CASCADE,
                 PRIMARY KEY(user, bet)
             )",
@@ -133,7 +133,7 @@ impl Bets {
         bet_uuid: U1,
         server: U2,
         desc: S1,
-        options: &[S2],
+        outcomes: &[S2],
     ) -> Result<(), BetError>
     where U1: Into<u64>, U2: Into<u64>, S1: ToString, S2: ToString {
         let bet_uuid = bet_uuid.into();
@@ -147,10 +147,10 @@ impl Bets {
             VALUES (?1, ?2, ?3, ?4)",
             params![bet_uuid, server, 1, desc],
         )?;
-        for (i, opt) in options.into_iter().enumerate() {
+        for (i, opt) in outcomes.into_iter().enumerate() {
             tx.execute(
                 "INSERT 
-                INTO Option (bet, number, desc) 
+                INTO Outcome (bet, number, desc) 
                 VALUES (?1, ?2, ?3)",
                 params![bet_uuid, i, opt.to_string()],
             )?;
@@ -158,21 +158,21 @@ impl Bets {
         Ok(tx.commit()?)
     }
 
-    pub fn options_of_bet(&self, bet: u64) -> Result<Vec<u64>, BetError> {
+    pub fn outcomes_of_bet(&self, bet: u64) -> Result<Vec<u64>, BetError> {
         let conn = Connection::open(&self.db_path)?;
-        conn.options_of_bet(bet)
+        conn.outcomes_of_bet(bet)
     }
 
     pub fn bet_on<U1, U2, U3, A>(
         &self,
         bet: U1,
-        option: U2,
+        outcome: U2,
         user: U3,
         amount: A,
     ) -> Result<(AccountUpdate, Bet), BetError>
     where U1: Into<u64>, U2: Into<u64>, U3: Into<u64>, A: Into<Amount> {
         let bet: u64 = bet.into();
-        let option: u64 = option.into();
+        let outcome: u64 = outcome.into();
         let user: u64 = user.into();
         let amount: Amount = amount.into();
         let mut conn = Connection::open(&self.db_path)?;
@@ -205,16 +205,16 @@ impl Bets {
         let acc_update = tx.change_balance(bet_info.server, user, -(amount as i64))?;
         tx.execute(
             "INSERT or ignore
-            INTO Wager (bet, option, server, user, amount)
+            INTO Wager (bet, outcome, server, user, amount)
             VALUES (?1, ?2, ?3, ?4, ?5)",
-            [bet, option, bet_info.server, user, 0],
+            [bet, outcome, bet_info.server, user, 0],
         )?;
         tx.execute(
             "UPDATE Wager
             SET amount = amount + ?1
-            WHERE bet = ?2 AND option = ?3 AND user = ?4
+            WHERE bet = ?2 AND outcome = ?3 AND user = ?4
             ",
-            [amount, bet, option, user],
+            [amount, bet, outcome, user],
         )?;
         tx.commit()?;
         Ok((
@@ -222,7 +222,7 @@ impl Bets {
             Bet {
                 bet: bet.clone(),
                 desc: bet_info.desc,
-                options: conn.options_statuses(bet)?,
+                outcomes: conn.outcomes_statuses(bet)?,
                 is_open: bet_info.is_open,
                 server: bet_info.server
             },
@@ -259,10 +259,10 @@ impl Bets {
         let mut conn = Connection::open(&self.db_path)?;
         conn.assert_bet_not_deleted(bet)?;
         let bet_info = conn.bet_info(bet)?;
-        let options = conn.options_statuses(bet)?;
-        let wagers: Vec<(u64, u64)> = options
+        let outcomes = conn.outcomes_statuses(bet)?;
+        let wagers: Vec<(u64, u64)> = outcomes
             .iter()
-            .flat_map(|option_status| option_status.wagers.clone())
+            .flat_map(|outcome_status| outcome_status.wagers.clone())
             .collect();
         let mut account_updates = Vec::new();
         let tx = conn.transaction()?;
@@ -280,27 +280,27 @@ impl Bets {
     pub fn resolve<U1, U2>(
         &self,
         bet: U1,
-        winning_option: U2,
+        winning_outcome: U2,
     ) -> Result<Vec<AccountUpdate>, BetError>
     where U1: Into<u64>, U2: Into<u64> {
         let bet = bet.into();
-        let winning_option = winning_option.into() as usize; 
+        let winning_outcome = winning_outcome.into() as usize; 
         let mut conn = Connection::open(&self.db_path)?;
         let bet_info = conn.bet_info(bet)?;
         // retrieve the total of the bet and the winning parts
         conn.assert_bet_not_deleted(bet)?;
-        let options_statuses = conn.options_statuses(bet)?;
+        let outcomes_statuses = conn.outcomes_statuses(bet)?;
         let mut winners: Vec<u64> = Vec::new();
         let mut wins: Vec<u64> = Vec::new();
         let mut total = 0;
-        for (i, option_status) in options_statuses.iter().enumerate() {
-            let option_sum = option_status
+        for (i, outcome_status) in outcomes_statuses.iter().enumerate() {
+            let outcome_sum = outcome_status
                 .wagers
                 .iter()
                 .fold(0, |init, wager| init + wager.1);
-            total += option_sum;
-            if i == winning_option {
-                for (winner, win) in &option_status.wagers {
+            total += outcome_sum;
+            if i == winning_outcome {
+                for (winner, win) in &outcome_status.wagers {
                     winners.push(*winner);
                     wins.push(*win);
                 }

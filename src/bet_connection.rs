@@ -1,16 +1,16 @@
 use rusqlite::Connection;
-use crate::{BetError, Option, BetInfo};
+use crate::{BetError, Outcome, BetInfo};
 
 pub(crate) trait BetConnection {
-    fn options_of_bet(&self, bet: u64) -> Result<Vec<u64>, BetError>;
+    fn outcomes_of_bet(&self, bet: u64) -> Result<Vec<u64>, BetError>;
 
-    fn option_status(
-        &self, bet: u64, option: u64,
-    ) -> Result<Option, BetError>;
+    fn outcome_status(
+        &self, bet: u64, outcome: u64,
+    ) -> Result<Outcome, BetError>;
 
-    fn options_statuses(
+    fn outcomes_statuses(
         &self, bet: u64
-    ) -> Result<Vec<Option>, BetError>;
+    ) -> Result<Vec<Outcome>, BetError>;
 
     fn assert_bet_not_deleted(&self, bet: u64) -> Result<(), BetError>;
 
@@ -20,10 +20,10 @@ pub(crate) trait BetConnection {
 }
 
 impl BetConnection for Connection {
-    fn options_of_bet(&self, bet: u64) -> Result<Vec<u64>, BetError> {
+    fn outcomes_of_bet(&self, bet: u64) -> Result<Vec<u64>, BetError> {
         Ok(self.prepare(
                 "SELECT number 
-                FROM Option
+                FROM Outcome
                 WHERE bet = ?1",
             )
             .unwrap()
@@ -31,41 +31,41 @@ impl BetConnection for Connection {
             .collect::<Result<Vec<_>, _>>()?)
     }
 
-    fn option_status(
-        &self, bet: u64, option: u64,
-    ) -> Result<Option, BetError> {
+    fn outcome_status(
+        &self, bet: u64, outcome: u64,
+    ) -> Result<Outcome, BetError> {
         let desc = self.prepare(
             "SELECT desc
-            FROM Option
+            FROM Outcome
             WHERE bet = ?1 AND number = ?2",
             )
             .unwrap()
-            .query_row([bet, option], |row| row.get::<usize, String>(0))?;
+            .query_row([bet, outcome], |row| row.get::<usize, String>(0))?;
         let mut stmt = self
             .prepare(
                 "SELECT user, amount
                 FROM Wager
-                WHERE bet = ?1 AND option = ?2",
+                WHERE bet = ?1 AND outcome = ?2",
             )
             .unwrap();
-        let mut rows = stmt.query([bet, option])?;
+        let mut rows = stmt.query([bet, outcome])?;
         let mut wagers = Vec::new();
         while let Some(row) = rows.next()? {
             wagers.push((row.get::<usize, u64>(0)?, row.get::<usize, u64>(1)?));
         }
-        Ok(Option {
+        Ok(Outcome {
             desc: desc,
             wagers: wagers,
         })
     }
 
-    fn options_statuses(
+    fn outcomes_statuses(
         &self, bet: u64
-    ) -> Result<Vec<Option>, BetError> {
-        let options = self.options_of_bet(bet)?;
-        options
+    ) -> Result<Vec<Outcome>, BetError> {
+        let outcomes = self.outcomes_of_bet(bet)?;
+        outcomes
             .into_iter()
-            .map(|opt| self.option_status(bet, opt))
+            .map(|opt| self.outcome_status(bet, opt))
             .collect::<Result<Vec<_>, _>>()
     }
 
