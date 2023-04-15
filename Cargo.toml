@@ -1,6 +1,6 @@
 [package]
 name = "betting"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "A crate to manage twitch-style bets (aka 'Parimutuel betting')"
 license = "Unlicense"
