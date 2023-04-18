@@ -1,4 +1,3 @@
-
 #[derive(Debug, Clone)]
 pub struct AccountUpdate {
     pub server: u64,
@@ -41,6 +40,7 @@ pub enum BetError {
     BetLocked,
     AlreadyExists,
     InternalError(rusqlite::Error),
+    ArgError
 }
 
 impl From<rusqlite::Error> for BetError {
