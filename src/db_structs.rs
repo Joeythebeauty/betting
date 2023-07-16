@@ -1,3 +1,4 @@
+use thiserror::Error;
 
 #[derive(Debug, Clone)]
 pub struct AccountUpdate {
@@ -33,13 +34,19 @@ pub struct AccountStatus {
     pub in_bet: u32,
 }
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum BetError {
+    #[error("betting on multiple option")]
     MultiOpt(Vec<String>),
+    #[error("not found")]
     NotFound,
+    #[error("insufficient funds")]
     NotEnoughMoney,
+    #[error("betting on locked bet")]
     BetLocked,
+    #[error("uuid already exists")]
     AlreadyExists,
+    #[error("rusqlite error: {0}")]
     InternalError(rusqlite::Error),
 }
 
