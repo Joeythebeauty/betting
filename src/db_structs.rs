@@ -48,7 +48,6 @@ pub enum BetError {
     AlreadyExists,
     #[error("rusqlite error: {0}")]
     InternalError(rusqlite::Error),
-    ArgError
 }
 
 impl From<rusqlite::Error> for BetError {
