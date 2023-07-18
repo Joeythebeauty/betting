@@ -3,7 +3,7 @@ mod db_structs;
 mod bet_connection;
 mod bet_transaction;
 mod bets;
-mod utils;
+pub mod utils;
 pub use amount::Amount;
 pub use bets::Bets;
 pub use db_structs::*;
