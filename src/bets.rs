@@ -1,6 +1,6 @@
 use crate::{utils, amount::Amount, BetError, AccountUpdate, Bet, AccountStatus, bet_connection::BetConnection, bet_transaction::BetTransaction};
 use rusqlite::{Connection, Result, Transaction, params};
-use std::{collections::HashMap};
+use std::collections::HashMap;
 use itertools::izip;
 
 #[derive(Debug, Clone)]
@@ -98,6 +98,16 @@ impl Bets {
             [amount, server],
         )?;
         Ok(tx.commit()?)
+    }
+
+    pub fn global_income(&self, income: u64) -> Result<(), BetError> {
+        let conn = Connection::open(&self.db_path)?;
+        conn.execute(
+            "UPDATE Account
+            SET balance = balance + ?1", 
+            [income]
+        )?;
+        Ok(())
     }
 
     pub fn income(&self, server: u64, income: u64) -> Result<Vec<AccountUpdate>, BetError> {
