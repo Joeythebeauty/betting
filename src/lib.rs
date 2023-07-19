@@ -24,9 +24,9 @@ mod tests {
         bets.create_account(server_id, alice, 100)?;
         bets.create_account(server_id, bob, 100)?;
         bets.create_account(server_id, charlie, 100)?;
-        // Create a bet with 2 outcomes
+        // Alice creates a bet with 2 outcomes
         bets.create_bet(
-            bet_id, server_id,
+            bet_id, server_id, alice,
             "Who will win the Rocket League 1v1 ?",
             &vec!["Alice", "Bob"],
         )?;

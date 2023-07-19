@@ -86,8 +86,8 @@ impl BetConnection for Connection {
     }
 
     fn bet_info(&self, bet: u64) -> Result<BetInfo, BetError> {
-        let (desc, server, is_open) = self.prepare(
-            "SELECT desc, server, is_open 
+        let (desc, server, author, is_open) = self.prepare(
+            "SELECT desc, server, author, is_open 
             FROM Bet
             WHERE uuid = ?1
             ",
@@ -99,10 +99,11 @@ impl BetConnection for Connection {
             Ok((
                 row.get::<usize, String>(0)?,
                 row.get::<usize, u64>(1)?, 
-                row.get::<usize, u32>(2)? != 0
+                row.get::<usize, u64>(2)?, 
+                row.get::<usize, u32>(3)? != 0
             ))
         )?;
-        Ok(BetInfo { desc, server, is_open })
+        Ok(BetInfo { desc, server, author, is_open })
     }
 
     fn balance(&self, server: u64, user: u64) -> Result<u64, BetError> {

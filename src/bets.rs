@@ -1,4 +1,4 @@
-use crate::{utils, amount::Amount, BetError, AccountUpdate, Bet, AccountStatus, bet_connection::BetConnection, bet_transaction::BetTransaction};
+use crate::{utils, amount::Amount, BetError, AccountUpdate, Bet, AccountStatus, bet_connection::BetConnection, bet_transaction::BetTransaction, BetInfo};
 use rusqlite::{Connection, Result, Transaction, params};
 use std::collections::HashMap;
 use itertools::izip;
@@ -24,6 +24,7 @@ impl Bets {
             "CREATE TABLE IF NOT EXISTS Bet (
                 uuid INTEGER PRIMARY KEY,
                 server INTEGER,
+                author INTEGER NOT NULL,
                 is_open INTEGER NOT NULL,
                 desc TEXT
             )",
@@ -135,6 +136,7 @@ impl Bets {
         &self,
         bet_uuid: u64,
         server: u64,
+        author: u64,
         desc: S1,
         outcomes: &[S2],
     ) -> Result<(), BetError>
@@ -144,9 +146,9 @@ impl Bets {
         let tx = conn.transaction()?;
         tx.execute(
             "INSERT 
-            INTO Bet (uuid, server, is_open, desc) 
-            VALUES (?1, ?2, ?3, ?4)",
-            params![bet_uuid, server, 1, desc],
+            INTO Bet (uuid, server, author, is_open, desc) 
+            VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![bet_uuid, server, author, 1, desc],
         )?;
         for (i, opt) in outcomes.into_iter().enumerate() {
             tx.execute(
@@ -222,7 +224,8 @@ impl Bets {
                 desc: bet_info.desc,
                 outcomes: conn.outcomes_statuses(bet)?,
                 is_open: bet_info.is_open,
-                server: bet_info.server
+                server: bet_info.server,
+                author: bet_info.author,
             },
         ))
     }
@@ -362,5 +365,10 @@ impl Bets {
                 in_bet: *wagers.get(&user).unwrap_or(&0),
             })
             .collect())
+    }
+
+    pub fn get_info(&self, bet_uuid: u64) -> Result<BetInfo, BetError> {
+        let conn = Connection::open(&self.db_path)?;
+        conn.bet_info(bet_uuid)
     }
 }

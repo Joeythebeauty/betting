@@ -8,15 +8,17 @@ pub struct AccountUpdate {
     pub balance: u64,
 }
 
-pub(crate) struct BetInfo {
+pub struct BetInfo {
     pub desc: String,
     pub server: u64,
+    pub author: u64,
     pub is_open: bool
 }
 
 pub struct Bet {
     pub bet: u64,
     pub server: u64,
+    pub author: u64,
     pub desc: String,
     pub outcomes: Vec<Outcome>,
     pub is_open: bool
