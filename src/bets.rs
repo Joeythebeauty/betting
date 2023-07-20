@@ -322,7 +322,7 @@ impl Bets {
         conn.balance(server, user)
     }
 
-    pub fn accounts(&self, server: &str) -> Result<Vec<AccountStatus>, BetError> {
+    pub fn accounts(&self, server: u64) -> Result<Vec<AccountStatus>, BetError> {
         let conn = Connection::open(&self.db_path)?;
         // Map <user, balance>
         let mut accounts = HashMap::new();
@@ -334,7 +334,7 @@ impl Bets {
                     ",
             )
             .unwrap();
-        let mut rows = stmt.query(&[server])?;
+        let mut rows = stmt.query([server])?;
         while let Some(row) = rows.next()? {
             accounts.insert(row.get::<usize, String>(0)?, row.get::<usize, u32>(1)?);
         }
@@ -346,7 +346,7 @@ impl Bets {
                     WHERE server = ?1",
             )
             .unwrap();
-        let mut rows = stmt.query(&[server])?;
+        let mut rows = stmt.query([server])?;
         let mut wagers = HashMap::new();
         while let Some(row) = rows.next()? {
             let user = row.get::<usize, String>(0)?;
