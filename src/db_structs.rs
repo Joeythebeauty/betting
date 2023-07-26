@@ -36,9 +36,9 @@ pub struct Outcome {
 }
 
 pub struct AccountStatus {
-    pub user: String,
-    pub balance: u32,
-    pub in_bet: u32,
+    pub user: u64,
+    pub balance: u64,
+    pub in_bet: u64,
 }
 
 #[derive(Error, Debug)]

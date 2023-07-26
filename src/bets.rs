@@ -337,6 +337,29 @@ impl Bets {
         conn.balance(server, user)
     }
 
+    pub fn account(&self, server: u64, user: u64) -> Result<AccountStatus, BetError> {
+        let conn = Connection::open(&self.db_path)?;
+        let balance = conn
+        .prepare(
+            "SELECT balance 
+                FROM Account
+                WHERE server = ?1 AND user = ?2
+                ",
+        )
+        .unwrap().query_row([server, user], |row| row.get::<usize, u64>(0))?;
+        let mut stmt = conn.prepare(
+            "SELECT amount
+            FROM Wager
+            WHERE server = ?1 AND user = ?2"
+        ).unwrap();
+        let mut rows = stmt.query_map([server, user], |row| row.get::<usize, u64>(0))?;
+        let mut in_bet = 0;
+        while let Some(amount_res) = rows.next() {
+            in_bet += amount_res?;
+        }
+        Ok(AccountStatus { user, balance, in_bet })
+    }
+
     pub fn accounts(&self, server: u64) -> Result<Vec<AccountStatus>, BetError> {
         let conn = Connection::open(&self.db_path)?;
         // Map <user, balance>
@@ -351,7 +374,7 @@ impl Bets {
             .unwrap();
         let mut rows = stmt.query([server])?;
         while let Some(row) = rows.next()? {
-            accounts.insert(row.get::<usize, String>(0)?, row.get::<usize, u32>(1)?);
+            accounts.insert(row.get::<usize, u64>(0)?, row.get::<usize, u64>(1)?);
         }
         // Map <user, total wagered>
         let mut stmt = conn
@@ -364,18 +387,18 @@ impl Bets {
         let mut rows = stmt.query([server])?;
         let mut wagers = HashMap::new();
         while let Some(row) = rows.next()? {
-            let user = row.get::<usize, String>(0)?;
+            let user = row.get::<usize, u64>(0)?;
             let amount = match wagers.get(&user) {
                 Some(amount) => *amount,
                 None => 0,
             };
-            wagers.insert(user, amount + row.get::<usize, u32>(1)?);
+            wagers.insert(user, amount + row.get::<usize, u64>(1)?);
         }
         // return the account statuses
         Ok(accounts
             .into_iter()
             .map(|(user, balance)| AccountStatus {
-                user: user.clone(),
+                user: user,
                 balance: balance,
                 in_bet: *wagers.get(&user).unwrap_or(&0),
             })
