@@ -1,4 +1,4 @@
-use crate::{utils, amount::Amount, BetError, AccountUpdate, Bet, AccountStatus, bet_connection::BetConnection, bet_transaction::BetTransaction, BetInfo};
+use crate::{utils, amount::Amount, BetError, AccountUpdate, Bet, AccountStatus, bet_connection::BetConnection, bet_transaction::BetTransaction, BetInfo, Position};
 use rusqlite::{Connection, Result, Transaction, params};
 use std::collections::HashMap;
 use itertools::izip;
@@ -315,6 +315,21 @@ impl Bets {
         Bets::delete_bet(&tx, bet)?;
         tx.commit()?;
         Ok(account_updates)
+    }
+
+    pub fn position(&self, user: u64, bet: u64) -> Result<Position, BetError> {
+        let conn = Connection::open(&self.db_path)?;
+        let (outcome, amount) = conn
+        .prepare(
+            "SELECT outcome, amount 
+                FROM Wager
+                WHERE user = ?1 AND bet = ?2
+                ",
+        )
+        .unwrap().query_row([user, bet], |row| Ok((
+            row.get::<usize, usize>(0)?, row.get::<usize, u64>(1)?
+        )))?;
+        Ok(Position { outcome, amount })
     }
 
     pub fn balance(&self, server: u64, user: u64) -> Result<u64, BetError> {

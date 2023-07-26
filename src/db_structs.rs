@@ -1,5 +1,10 @@
 use thiserror::Error;
 
+pub struct Position {
+    pub outcome: usize,
+    pub amount: u64
+}
+
 #[derive(Debug, Clone)]
 pub struct AccountUpdate {
     pub server: u64,
