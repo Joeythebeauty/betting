@@ -251,6 +251,9 @@ impl Bets {
             VALUES (?1)",
             [bet],
         )?;
+        tx.execute("DELETE FROM Wager
+        WHERE bet = ?1
+        ", [bet])?;
         Ok(())
     }
 
