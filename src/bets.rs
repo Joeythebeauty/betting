@@ -312,8 +312,9 @@ impl Bets {
         let mut account_updates = Vec::new();
         let tx = conn.transaction()?;
         for (user, gain) in izip!(winners, gains) {
-            account_updates.push(tx.change_balance(bet_info.server, user, gain as i64)?);
-        }
+    let net_gain = (gain as f64 * 0.90) as i64;  // Apply 10% fee
+    account_updates.push(tx.change_balance(bet_info.server, user, net_gain)?);
+}
         // delete the bet
         Bets::delete_bet(&tx, bet)?;
         tx.commit()?;
