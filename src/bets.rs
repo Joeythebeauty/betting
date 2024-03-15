@@ -306,15 +306,22 @@ impl Bets {
                 }
             }
         }
+        // Check if bets were placed on more than one outcome
+        let apply_fee = betting_outcomes > 1;
+        
         // compute the gains for each winners
         let gains = utils::lrm(total, &wins);
         // update the accounts
         let mut account_updates = Vec::new();
         let tx = conn.transaction()?;
         for (user, gain) in izip!(winners, gains) {
-    let net_gain = (gain as f64 * 0.90) as i64;  // Apply 10% fee
-    account_updates.push(tx.change_balance(bet_info.server, user, net_gain)?);
-}
+    let net_gain = if apply_fee {
+            (gain as f64 * 0.90) as i64 // Apply 10% fee if necessary
+        } else {
+            gain as i64 // Distribute gains without fee
+        };
+        account_updates.push(tx.change_balance(bet_info.server, user, net_gain)?);
+    }
         // delete the bet
         Bets::delete_bet(&tx, bet)?;
         tx.commit()?;
