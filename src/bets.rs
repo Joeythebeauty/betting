@@ -11,6 +11,18 @@ pub struct Bets {
 impl Bets {
     pub fn new(db_path: &str) -> Result<Self, BetError> {
         let conn = Connection::open(db_path)?;
+        
+        // Enable WAL mode
+        conn.execute("PRAGMA journal_mode=WAL;", [])?;
+
+        // Optionally verify WAL mode is set (this step is optional)
+        let wal_check: String = conn.query_row(
+            "PRAGMA journal_mode;",
+            [],
+            |row| row.get(0),
+        )?;
+        println!("Journal mode set to: {}", wal_check); // Should print "WAL"
+        
         conn.execute(
             "CREATE TABLE IF NOT EXISTS Account (
                 server INTEGER,
